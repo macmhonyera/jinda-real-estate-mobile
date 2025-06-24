@@ -1,4 +1,5 @@
 import { FontAwesome, MaterialIcons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import {
   Image,
   ImageBackground,
@@ -11,6 +12,15 @@ import {
 
 
 export default function SignInPage() {
+
+  const router = useRouter();
+  
+  
+    const handleSignUp = () => {
+      // Navigate to the sign-in page
+      router.push("/signup");
+    };
+
   return (
 
     <ImageBackground
@@ -60,7 +70,7 @@ export default function SignInPage() {
             </TouchableOpacity>
 
             {/* Login Button */}
-            <TouchableOpacity className="bg-[#F97316] px-10 py-4 rounded-xl" >
+            <TouchableOpacity className="bg-[#F97316] px-10 py-4 rounded-xl" onPress={() => router.push("/home")}>
               <Text className="flex items-center text-center text-white font-bold text-lg">Login</Text>
             </TouchableOpacity>
           </View>
@@ -85,7 +95,7 @@ export default function SignInPage() {
         {/* Sign Up Link */}
         <View className="flex-row justify-center mt-6">
           <Text className="text-gray-200">Haven’t any account?</Text>
-          <TouchableOpacity>
+          <TouchableOpacity onPress={handleSignUp} className="ml-1">
             <Text className="text-[#F97316] font-bold ml-1">Sign up</Text>
           </TouchableOpacity>
         </View>
