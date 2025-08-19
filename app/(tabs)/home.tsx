@@ -11,7 +11,7 @@ import {
     ImageSourcePropType,
     SafeAreaView,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown, FadeInLeft, FadeInRight } from 'react-native-reanimated';
 
@@ -97,6 +97,12 @@ const MOCK_PROPERTIES: Property[] = [
 
 export default function Home() {
     const router = useRouter();
+      const { name, photo } = useLocalSearchParams();
+
+  // Convert them to string if needed (they're initially string | string[] | undefined)
+  const displayName = Array.isArray(name) ? name[0] : name || 'Guest';
+  const displayPhoto = Array.isArray(photo) ? photo[0] : photo;
+
     const [properties, setProperties] = useState<Property[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
@@ -155,14 +161,14 @@ export default function Home() {
                         <View className="flex-row items-center">
                             <Image
                                 source={{
-                                    uri: 'https://ui-avatars.com/api/?name=Macmillan+Mhonyera',
+                                    uri: displayPhoto||'https://ui-avatars.com/api/?name=Macmillan+Mhonyera',
                                 }}
                                 className="w-10 h-10 rounded-full mr-3"
                             />
                             <View>
                                 <Text className="text-white text-sm">Good Morning</Text>
                                 <Text className="text-white font-bold text-base">
-                                    Macmillan Mhonyera
+                                    { displayName || 'Macmillan Mhonyera'}
                                 </Text>
                             </View>
                         </View>
