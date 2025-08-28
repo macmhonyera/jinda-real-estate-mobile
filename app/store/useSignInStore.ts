@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { router } from 'expo-router';
+import { usePropertyStore } from '../store/useAddProperty'; // Import usePropertyStore
 
 interface LoginForm {
   email: string;
@@ -35,7 +37,7 @@ export const useSignInStore = create<AuthStore>((set, get) => ({
     const form = get().loginForm;
 
     try {
-      const response = await fetch('http://192.168.100.231:4000/auth/login', {
+      const response = await fetch('http://192.168.122.1:4000/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
@@ -43,11 +45,18 @@ export const useSignInStore = create<AuthStore>((set, get) => ({
 
       const result = await response.json();
       console.log('Login response:', result);
-      if (result.access_token) {
-        await AsyncStorage.setItem('token', result.access_token);
-        set({ accessToken: result.access_token });
-        get().resetLoginForm();
 
+      if (result.access_token) {
+        // Store the token in AsyncStorage
+        await AsyncStorage.setItem('access_token', result.access_token);
+        // Set the token in Zustand
+        set({ accessToken: result.access_token });
+        
+        // Load the token into Zustand after login
+        usePropertyStore.getState().loadToken();  // Calling loadToken from usePropertyStore
+
+        // Reset login form and navigate to home
+        get().resetLoginForm();
         router.replace('/(tabs)/home');
       } else {
         console.warn('Login failed');
