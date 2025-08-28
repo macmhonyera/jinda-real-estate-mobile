@@ -115,7 +115,7 @@ export const usePropertyStore = create<PropertyStore>((set, get) => ({
     }
 
     try {
-      const response = await fetch('http://192.168.122.1:4000/properties', {
+      const response = await fetch('http://192.168.100.232:4000/properties', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

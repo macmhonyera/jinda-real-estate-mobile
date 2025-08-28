@@ -74,7 +74,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   submitForm: async () => {
     const form = get().form;
     try {
-      const response = await fetch('http://192.168.100.231:4000/auth/register', {
+      const response = await fetch('http://192.168.100.232:4000/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),

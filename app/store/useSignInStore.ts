@@ -37,7 +37,7 @@ export const useSignInStore = create<AuthStore>((set, get) => ({
     const form = get().loginForm;
 
     try {
-      const response = await fetch('http://192.168.122.1:4000/auth/login', {
+      const response = await fetch('http://192.168.100.232:4000/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
