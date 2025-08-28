@@ -23,7 +23,7 @@ const randomTagline = taglines[Math.floor(Math.random() * taglines.length)];
 type UIProperty = {
   id: string;
   title: string;
-  image: ImageSourcePropType; // we’ll supply { uri: ... }
+  image: ImageSourcePropType;
   price?: string;
   location?: string;
   isLiked: boolean;
@@ -46,21 +46,21 @@ export default function Home() {
   // Local liked-state (by id) so we don’t mutate store data
   const [liked, setLiked] = useState<Record<string, boolean>>({});
 
+  // 🔎 Search state
+  const [searchQuery, setSearchQuery] = useState('');
+
   useEffect(() => {
-    // default: fetch current user's properties (as your store is set up)
-    fetchProperties();
+    fetchProperties(); // default: fetch current user's properties
   }, [fetchProperties]);
 
   // ---- Helpers to map API → UI ----
   const toUI = (p: typeof apiProps[number]): UIProperty => ({
     id: p.id,
     title: p.title ?? 'Untitled property',
-    // ✅ only one image: the first image url (fallback to placeholder)
-    image: { uri: p.imageUrls?.[0] ?? PLACEHOLDER },
+    image: { uri: p.imageUrls?.[0] ?? PLACEHOLDER },  // ✅ only the first image
     price: currency(p.price),
     location: p.address,
     isLiked: !!liked[p.id],
-    // size: p.squareMeters ? `${p.squareMeters} sqm` : undefined,
     amenities: p.amenities ?? [],
   });
 
@@ -70,22 +70,36 @@ export default function Home() {
     return db - da; // newest first
   };
 
-  // ---- Featured & Recents ----
-  // Featured rule: items that have at least one image (tweak as needed) and take top 10
+  // 🔎 Filter API props by search (title, address, amenities)
+  const filteredApiProps = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return apiProps;
+    return apiProps.filter(p => {
+      const haystack = [
+        p.title,
+        p.address,
+        ...(p.amenities || []),
+      ]
+        .filter(Boolean)
+        .map(x => String(x).toLowerCase());
+      return haystack.some(s => s.includes(q));
+    });
+  }, [apiProps, searchQuery]);
+
+  // ---- Featured & Recents from filtered list ----
   const featured: UIProperty[] = useMemo(() => {
-    return apiProps
-      .filter(p => (p.imageUrls?.length ?? 0) > 0)
+    return filteredApiProps
+      .filter(p => (p.imageUrls?.length ?? 0) > 0) // your featured rule
       .slice(0, 10)
       .map(toUI);
-  }, [apiProps, liked]);
+  }, [filteredApiProps, liked]);
 
-  // Recently Added: sort by createdAt/updatedAt desc and take top 20
   const recents: UIProperty[] = useMemo(() => {
-    return [...apiProps]
+    return [...filteredApiProps]
       .sort(byDateDesc)
       .slice(0, 20)
       .map(toUI);
-  }, [apiProps, liked]);
+  }, [filteredApiProps, liked]);
 
   const toggleLike = (id: string) => {
     setLiked(prev => ({ ...prev, [id]: !prev[id] }));
@@ -104,9 +118,6 @@ export default function Home() {
         <View className="p-3">
           <Text className="text-base font-semibold text-gray-800">{item.title}</Text>
           {item.price ? <Text className="text-sm text-gray-600">{item.price}</Text> : null}
-          {/* <Text className="text-xs text-gray-500">
-            {item.size ?? '—'} • {item.bedrooms ?? '—'} Bed • {item.bathrooms ?? '—'} Bath
-          </Text> */}
           {item.location ? <Text className="text-xs text-gray-400">{item.location}</Text> : null}
         </View>
       </TouchableOpacity>
@@ -139,13 +150,32 @@ export default function Home() {
           </Animated.View>
 
           {/* Search */}
-          <Animated.View entering={FadeInDown.delay(200).duration(500)} className="flex-row items-center bg-white rounded-xl px-4 py-2 mb-4 shadow-md mx-4">
+          <Animated.View
+            entering={FadeInDown.delay(200).duration(500)}
+            className="flex-row items-center bg-white rounded-xl px-4 py-2 mb-4 shadow-md mx-4"
+          >
             <Ionicons name="search-outline" size={20} color="#999" />
-            <TextInput className="ml-2 flex-1 text-gray-800" placeholder="Search by location..." />
-            <TouchableOpacity><Ionicons name="options-outline" size={20} color={darkBlue} /></TouchableOpacity>
+            <TextInput
+              className="ml-2 flex-1 text-gray-800"
+              placeholder="Search by title, address, or amenity…"
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              autoCorrect={false}
+              autoCapitalize="none"
+              clearButtonMode="while-editing"
+            />
+            {searchQuery.length > 0 ? (
+              <TouchableOpacity onPress={() => setSearchQuery('')}>
+                <Ionicons name="close-circle" size={20} color="#aaa" />
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity>
+                <Ionicons name="options-outline" size={20} color={darkBlue} />
+              </TouchableOpacity>
+            )}
           </Animated.View>
 
-          {/* Categories */}
+          {/* Categories (UI only here; optional to wire into filters) */}
           <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-6 px-4" contentContainerStyle={{ paddingVertical: 4 }}>
             {['All', 'Apartment', 'Studio', 'Cottage'].map((cat, i) => (
               <Animated.View entering={FadeInRight.delay(i * 100).duration(400)} key={i} className="mr-3">
@@ -170,7 +200,11 @@ export default function Home() {
                 horizontal
                 keyExtractor={(item) => item.id}
                 showsHorizontalScrollIndicator={false}
-                ListEmptyComponent={<Text className="text-orange-200">No featured properties yet.</Text>}
+                ListEmptyComponent={
+                  <Text className="text-orange-200">
+                    {searchQuery ? 'No featured properties match your search.' : 'No featured properties yet.'}
+                  </Text>
+                }
               />
             )}
           </View>
@@ -183,7 +217,9 @@ export default function Home() {
             ) : error ? (
               <Text className="text-orange-200">Failed to load: {error}</Text>
             ) : recents.length === 0 ? (
-              <Text className="text-orange-200">No recent properties yet.</Text>
+              <Text className="text-orange-200">
+                {searchQuery ? 'No results match your search.' : 'No recent properties yet.'}
+              </Text>
             ) : (
               recents.map((p, idx) => (
                 <Animated.View key={p.id} entering={FadeInDown.delay(idx * 100).duration(400)}>
